@@ -1,0 +1,148 @@
+
+   //     private TicketNewAdapter categoryNewAdapter;
+
+//        categoryNewAdapter = new TicketNewAdapter(activity, ticketList , reportTicket -> {  // listener 
+//            selectedTicketId = reportTicket.getId();
+//            binding.actSelectCategory.setText(reportTicket.getName());  
+//        });
+//        binding.actSelectCategory.setDropDownHeight(300);
+//        binding.actSelectCategory.setAdapter(categoryNewAdapter);
+
+
+
+
+// adapter 
+
+public class TicketNewAdapter extends ArrayAdapter<ReportTicketModel.ReportTicket> {
+
+    private Activity activity;
+    private List<ReportTicketModel.ReportTicket> ticketList;
+    private int row_index = -1;
+    private OnClickListener listener;
+
+    public TicketNewAdapter(Activity activity, List<ReportTicketModel.ReportTicket> ticketList , OnClickListener listener) {
+        super(activity,0,ticketList);
+        if (ticketList != null && ticketList.size() == 1) {
+            ticketList.get(0).setChecked(true);
+        }
+        this.activity = activity;
+        this.ticketList = new ArrayList<>(ticketList);
+        this.listener = listener;
+    }
+
+    public interface OnClickListener{
+        void onClick(ReportTicketModel.ReportTicket reportTicket);
+    }
+
+    @NonNull
+    @Override
+    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+        NewListItemAreaOfConcernBinding binding;
+        if (convertView == null){
+            binding = NewListItemAreaOfConcernBinding.inflate(LayoutInflater.from(parent.getContext()),parent,false);
+            convertView = binding.getRoot();
+        }else {
+            binding = (NewListItemAreaOfConcernBinding) convertView.getTag();
+        }
+
+        final ReportTicketModel.ReportTicket data = getItem(position);
+
+        if (data != null) {
+            if (data.getName() != null && !data.getName().equals("")) {
+                binding.tvCategoryName.setText(data.getName());
+            }
+
+            binding.getRoot().setOnClickListener(v->{
+                if (data.isChecked()) {
+                    binding.rbSelect.setChecked(true);
+                    listener.onClick(data);
+                } else {
+                    for (int i = 0; i < ticketList.size(); i++) {
+                        ReportTicketModel.ReportTicket reportTicket = ticketList.get(i);
+                        if (data.getName().equals(reportTicket.getName())) {
+                            reportTicket.setChecked(true);
+                            listener.onClick(reportTicket);
+                        } else {
+                            reportTicket.setChecked(false);
+                        }
+                        ticketList.set(i, reportTicket);
+                    }
+                    notifyDataSetChanged();
+                }
+            });
+
+            binding.rbSelect.setChecked(data.isChecked());
+
+            binding.rbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (buttonView.isPressed()) {
+                    if (data.isChecked()) {
+                        binding.rbSelect.setChecked(true);
+                        listener.onClick(data);
+                    } else {
+                        for (int i = 0; i < ticketList.size(); i++) {
+                            ReportTicketModel.ReportTicket reportTicket = ticketList.get(i);
+                            if (data.getName().equals(reportTicket.getName())) {
+                                reportTicket.setChecked(isChecked);
+                            } else {
+                                reportTicket.setChecked(false);
+                            }
+                            ticketList.set(i, reportTicket);
+                        }
+                        notifyDataSetChanged();
+                        if (isChecked) {
+                            listener.onClick(data);
+                        }
+                    }
+
+                }
+            });
+        }
+        convertView.setTag(binding);
+        return convertView;
+    }
+
+    @NonNull
+    @Override
+    public Filter getFilter() {
+        return filter;
+    }
+
+    private Filter filter = new Filter() {
+        @Override
+        public CharSequence convertResultToString(Object resultValue) {
+            return ((ReportTicketModel.ReportTicket)resultValue).getName();
+        }
+
+        @Override
+        protected FilterResults performFiltering(CharSequence charSequence) {
+            List<ReportTicketModel.ReportTicket> suggestions = new ArrayList();
+            FilterResults filterResults = new FilterResults();
+            if(charSequence != null && charSequence.length() != 0) {
+                for (ReportTicketModel.ReportTicket reportTicket : ticketList) {
+                    if (reportTicket.getName().toLowerCase().contains(charSequence.toString().toLowerCase().trim())) {
+                        suggestions.add(reportTicket);
+                    }
+                }
+            } else {
+                suggestions.addAll(ticketList);
+            }
+            filterResults.values = suggestions;
+            filterResults.count = suggestions.size();
+            return filterResults;
+        }
+
+        @Override
+        protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
+            List<ReportTicketModel.ReportTicket> filteredList = (List<ReportTicketModel.ReportTicket>) filterResults.values;
+
+            if (filteredList != null) {
+                clear();
+                for (ReportTicketModel.ReportTicket reportTicket : filteredList){
+                    add(reportTicket);
+                }
+                notifyDataSetChanged();
+            }
+        }
+    };
+
+}
